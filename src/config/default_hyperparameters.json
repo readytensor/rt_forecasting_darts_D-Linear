@@ -2,13 +2,14 @@
   "history_forecast_ratio": 10,
   "lags_forecast_ratio": 3,
   "shared_weights": false,
-  "kernel_size": 10,
-  "const_init": true,
+  "kernel_size": 25,
+  "const_init": false,
   "n_epochs": 500,
-  "batch_size": 16,
+  "batch_size": 32,
   "force_reset": true,
   "save_checkpoints": true,
-  "optimizer_kwargs": {"lr": 1e-3},
+  "optimizer_kwargs": {"lr": 1e-4},
   "use_exogenous": true,
+  "use_static_covariates": true,
   "random_state": 0
 }

@@ -39,7 +39,7 @@ class Forecaster:
         shared_weights: bool = False,
         kernel_size: int = 25,
         const_init: bool = True,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
         optimizer_kwargs: Optional[dict] = None,
         use_exogenous: bool = True,
         random_state: int = 0,
