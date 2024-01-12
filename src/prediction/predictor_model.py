@@ -43,6 +43,7 @@ class Forecaster:
         optimizer_kwargs: Optional[dict] = None,
         use_past_covariates: bool = True,
         use_future_covariates: bool = True,
+        early_stopping: bool = True,
         random_state: int = 0,
         **kwargs,
     ):
@@ -152,8 +153,6 @@ class Forecaster:
             mode="min",
         )
 
-        pl_trainer_kwargs = {"callbacks": [stopper]}
-
         if cuda.is_available():
             pl_trainer_kwargs = {
                 "accelerator": "gpu",
@@ -161,6 +160,9 @@ class Forecaster:
             print("GPU training is available.")
         else:
             print("GPU training not available.")
+
+        if early_stopping:
+            pl_trainer_kwargs["callbcks"][stopper]
 
         self.model = DLinearModel(
             input_chunk_length=self.input_chunk_length,
