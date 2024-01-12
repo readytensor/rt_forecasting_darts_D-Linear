@@ -8,9 +8,9 @@
   "n_epochs": 500,
   "batch_size": 32,
   "optimizer_kwargs": {"lr": 1e-4},
-  "use_past_covariates": true,
-  "use_future_covariates": true,
-  "use_static_covariates": true,
+  "use_past_covariates": false,
+  "use_future_covariates": false,
+  "use_static_covariates": false,
   "early_stopping": false,
   "random_state": 0
 }
