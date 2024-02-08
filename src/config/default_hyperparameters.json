@@ -5,12 +5,14 @@
   "shared_weights": false,
   "kernel_size": 25,
   "const_init": false,
-  "n_epochs": 500,
+  "n_epochs": 2000,
   "batch_size": 32,
-  "optimizer_kwargs": {"lr": 1e-4},
+  "optimizer_kwargs": {
+    "lr": 1e-4
+  },
   "use_past_covariates": false,
   "use_future_covariates": false,
   "use_static_covariates": false,
-  "early_stopping": false,
+  "early_stopping": true,
   "random_state": 0
 }

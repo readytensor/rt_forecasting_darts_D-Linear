@@ -11,11 +11,11 @@ from sklearn.exceptions import NotFittedError
 from torch import cuda
 from sklearn.preprocessing import MinMaxScaler
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-
+from logger import get_logger
 
 warnings.filterwarnings("ignore")
 
-
+logger = get_logger(task_name="training")
 PREDICTOR_FILE_NAME = "predictor.joblib"
 MODEL_FILE_NAME = "model.joblib"
 
@@ -119,6 +119,7 @@ class Forecaster:
         self.const_init = const_init
         self.use_static_covariates = use_static_covariates
         self.optimizer_kwargs = optimizer_kwargs
+        self.kwargs = kwargs
         self.use_past_covariates = (
             use_past_covariates and len(data_schema.past_covariates) > 0
         )
@@ -162,20 +163,9 @@ class Forecaster:
             print("GPU training not available.")
 
         if early_stopping:
-            pl_trainer_kwargs["callbcks"][stopper]
+            pl_trainer_kwargs["callbacks"] = [stopper]
 
-        self.model = DLinearModel(
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            kernel_size=self.kernel_size,
-            shared_weights=self.shared_weights,
-            const_init=self.const_init,
-            use_static_covariates=self.use_static_covariates,
-            optimizer_kwargs=self.optimizer_kwargs,
-            pl_trainer_kwargs=pl_trainer_kwargs,
-            random_state=self.random_state,
-            **kwargs,
-        )
+        self.pl_trainer_kwargs = pl_trainer_kwargs
 
     def _prepare_data(
         self,
@@ -239,9 +229,9 @@ class Forecaster:
             target = TimeSeries.from_dataframe(
                 s,
                 value_cols=data_schema.target,
-                static_covariates=static_covariates.iloc[0]
-                if static_covariates is not None
-                else None,
+                static_covariates=(
+                    static_covariates.iloc[0] if static_covariates is not None else None
+                ),
             )
 
             targets.append(target)
@@ -275,9 +265,9 @@ class Forecaster:
                     if len(future_covariates_names) == 1
                     else future_covariates[future_covariates_names].values
                 )
-                future_covariates[
-                    future_covariates_names
-                ] = future_scaler.fit_transform(original_values)
+                future_covariates[future_covariates_names] = (
+                    future_scaler.fit_transform(original_values)
+                )
 
                 future_covariates = TimeSeries.from_dataframe(
                     future_covariates[future_covariates_names]
@@ -380,6 +370,31 @@ class Forecaster:
         targets, past_covariates, future_covariates = self._prepare_data(
             history=history,
             data_schema=data_schema,
+        )
+
+        if self.input_chunk_length > len(targets[0]):
+            self.input_chunk_length = len(targets[0]) - self.data_schema.forecast_length
+            logger.warning(
+                "The provided lags value is greater than the available history length."
+                f" Lags are set to to (history length - forecast horizon) = {len(targets[0]) - self.data_schema.forecast_length}"
+            )
+
+        if len(targets[0]) < 2 * self.data_schema.forecast_length:
+            raise ValueError(
+                f"Training series is too short. History should be at least double the forecast horizon. history_length = ({len(targets[0])}), forecast horizon = ({self.data_schema.forecast_length})"
+            )
+
+        self.model = DLinearModel(
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            kernel_size=self.kernel_size,
+            shared_weights=self.shared_weights,
+            const_init=self.const_init,
+            use_static_covariates=self.use_static_covariates,
+            optimizer_kwargs=self.optimizer_kwargs,
+            pl_trainer_kwargs=self.pl_trainer_kwargs,
+            random_state=self.random_state,
+            **self.kwargs,
         )
 
         self.model.fit(
