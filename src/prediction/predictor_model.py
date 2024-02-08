@@ -372,11 +372,18 @@ class Forecaster:
             data_schema=data_schema,
         )
 
-        if self.input_chunk_length > len(targets[0]):
-            self.input_chunk_length = len(targets[0]) - self.data_schema.forecast_length
+        if self.input_chunk_length > len(targets[0]) - self.output_chunk_length:
+            logger.warning(
+                f"histroy_length is ({len(targets[0])}) and output_chunk_length is ({self.output_chunk_length})."
+                f" lags cannot exceed the value of (histroy_length - output_chunk_length). Setting lags = ({len(targets[0]) - self.output_chunk_length})"
+            )
+            self.input_chunk_length = len(targets[0]) - self.output_chunk_length
+
+        elif self.input_chunk_length > len(targets[0]):
+            self.input_chunk_length = len(targets[0]) - self.output_chunk_length
             logger.warning(
                 "The provided lags value is greater than the available history length."
-                f" Lags are set to to (history length - forecast horizon) = {len(targets[0]) - self.data_schema.forecast_length}"
+                f" Lags are set to to (history length - forecast horizon) = {len(targets[0]) - self.output_chunk_length}"
             )
 
         if len(targets[0]) < 2 * self.data_schema.forecast_length:
